@@ -1,4 +1,4 @@
-import { getOS, getBrowserInfo, getOSVersion } from './browser'
+import { getBrowserInfo, getOSVersion } from './browser'
 import { UUID_KEY } from './config'
 import { LocalStorage } from './Storage'
 /**

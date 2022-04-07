@@ -1,7 +1,7 @@
 export const UUID_KEY = 'TRACKER_UUID'
 
 export const EVENT_LIST = [
-  'click',
+  'click', //
   'dblclick',
   'contextmenu',
   'mousedown',

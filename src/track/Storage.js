@@ -11,6 +11,7 @@ export class LocalStorage {
     try {
       info = JSON.parse(info)
     } finally {
+      // eslint-disable-next-line no-unsafe-finally
       return info
     }
   }

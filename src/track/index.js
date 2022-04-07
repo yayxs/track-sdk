@@ -2,83 +2,9 @@ import { EVENT_LIST } from './config'
 import { generateUUID, genDefaultOptions, genBaseInfo } from './generate'
 import { getEventListenerMethod, getEvent } from './event'
 
-const getDomDesc = (element, useClass = false) => {
-  const domDesc = []
-  if (!element || !element.tagName) {
-    return ''
-  }
-  if (element.id) {
-    return `#${element.id}`
-  }
-  domDesc.push(element.tagName.toLowerCase())
-  if (useClass) {
-    const className = element.className
-    if (className && typeof className === 'string') {
-      const classes = className.split(/\s+/)
-      domDesc.push(`.${classes.join('.')}`)
-    }
-  }
-  if (element.name) {
-    domDesc.push(`[name=${element.name}]`)
-  }
-  return domDesc.join('')
-}
+import { getBoundingClientRect, getDomPath } from './element'
+// import { createHistoryEvent } from './history'
 
-const querySelector = function (queryString) {
-  return (
-    document.getElementById(queryString) ||
-    document.getElementsByName(queryString)[0] ||
-    document.querySelector(queryString)
-  )
-}
-
-const getDomPath = (element, useClass = false) => {
-  if (!(element instanceof HTMLElement)) {
-    console.warn('input is not a HTML element!')
-    return ''
-  }
-  let domPath = []
-  let elem = element
-  while (elem) {
-    let domDesc = getDomDesc(elem, useClass)
-    if (!domDesc) {
-      break
-    }
-    domPath.unshift(domDesc)
-    if (
-      querySelector(domPath.join('>')) === element ||
-      domDesc.indexOf('body') >= 0
-    ) {
-      break
-    }
-    domPath.shift()
-    const children = elem.parentNode?.children
-    if (children.length > 1) {
-      for (let i = 0; i < children.length; i++) {
-        if (children[i] === elem) {
-          domDesc += `:nth-child(${i + 1})`
-          break
-        }
-      }
-    }
-    domPath.unshift(domDesc)
-    if (querySelector(domPath.join('>')) === element) {
-      break
-    }
-    elem = elem.parentNode
-  }
-  return domPath.join('>')
-}
-
-const getBoundingClientRect = (element) => {
-  const rect = element.getBoundingClientRect()
-  const width = rect.width || rect.right - rect.left
-  const height = rect.height || rect.bottom - rect.top
-  return Object.assign({}, rect, {
-    width,
-    height,
-  })
-}
 /**
  * 生成应用的信息
  */
@@ -139,9 +65,8 @@ export default class TrackSdk {
         const eventFix = getEvent(event)
 
         const trackerValue = eventFix.target.getAttribute('tracker-key')
+        console.log('trackerValue', trackerValue)
         if (trackerValue) {
-          console.log('++eventFix.target', eventFix.target)
-          console.log('++trackerValue', trackerValue)
           this.sendTracker('click', trackerValue, {})
         }
       },
@@ -165,14 +90,18 @@ export default class TrackSdk {
     if (this._options.enableHeatMapTracker) {
       this._openInnerTrack(['click'], 'innerHeatMap')
     }
+
     // 页面 history 变化
     if (this._options.enableHistoryTracker) {
+      // 1、首先监听页面初始化
       this._openInnerTrack(['load'], 'innerPageLoad')
+      // 2、对浏览器history对象对方法进行改写，实现对单页面应用history路由变化的监听
     }
 
     this._isInstall = true
     return this
   }
+
   /**
    * 开启内部埋点
    * @param {*} eventType 监听事件类型
@@ -229,6 +158,7 @@ export default class TrackSdk {
     const pageX = event.pageX || event.clientX + scrollX
     const pageY = event.pageY || event.clientY + scrollY
     const data = {
+      domOriginPath: domPath,
       domPath: encodeURIComponent(domPath),
       offsetX: ((pageX - rect.left - scrollX) / rect.width).toFixed(6),
       offsetY: ((pageY - rect.top - scrollY) / rect.height).toFixed(6),
@@ -238,7 +168,7 @@ export default class TrackSdk {
   /**
    * 用户ID
    */
-  setUserId() {
+  setUserId(userId) {
     this._options.userId = userId
   }
   /**
@@ -267,8 +197,6 @@ export default class TrackSdk {
 
     const ans = Object.assign({}, defaultData, data)
     this._baseInfo = genBaseInfo(ans)
-    console.log('++事件类型', eventType)
-    console.log('++事件key', eventId)
-    console.log('++埋点数据', this._baseInfo)
+    console.log('+++ 埋点数据', JSON.stringify(this._baseInfo, null, 2))
   }
 }

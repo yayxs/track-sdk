@@ -17,10 +17,14 @@ const createHistoryEvent = (type) => {
   if (!window.history) return
   const origin = history[type]
   return () => {
+    // eslint-disable-next-line no-undef
     const res = origin.apply(this, arguments)
     const e = new Event(type)
+    // eslint-disable-next-line no-undef
     e.arguments = arguments
     window.dispatchEvent(e) // https://developer.mozilla.org/zh-CN/docs/Web/API/EventTarget/dispatchEvent
     return res
   }
 }
+
+export { createHistoryEvent }
